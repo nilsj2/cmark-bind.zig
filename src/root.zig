@@ -9,6 +9,11 @@ const c = @cImport({
     @cInclude("cmark-gfm.h");
 });
 
+pub fn markdownToHTML(text: []const u8, options: RenderOptions) []const u8 {
+    const res_ptr = c.cmark_markdown_to_html(text.ptr, text.len, options.toCInt()).?;
+    return std.mem.span(res_ptr);
+}
+
 pub const RenderOptions = struct {
     /// Include a data-sourcepos attribute on all block elements.
     sourcepos: bool = false,
