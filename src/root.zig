@@ -126,9 +126,9 @@ pub const Node = struct {
         return std.mem.span(literal_ptr);
     }
 
-    pub fn getType(node: Node) ?Type {
+    pub fn getType(node: Node) !Type {
         const raw_type = c.cmark_node_get_type(node.cmark);
-        if (raw_type == 0) return null;
+        if (raw_type == 0) return error.NodeTypeError;
         return @enumFromInt(raw_type);
     }
 
