@@ -128,6 +128,10 @@ pub const Node = struct {
         } else error.NonLiteralNode;
     }
 
+    pub fn startLine(node: Node) c_int {
+        return c.cmark_node_get_start_line(node.cmark);
+    }
+
     pub fn getType(node: Node) !Type {
         const raw_type = c.cmark_node_get_type(node.cmark);
         if (raw_type == 0) return error.NodeTypeError;
