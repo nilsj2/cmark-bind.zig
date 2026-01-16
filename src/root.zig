@@ -121,9 +121,11 @@ pub const Node = struct {
         defer c.cmark_node_free(node.cmark);
     }
 
-    pub fn literal(node: Node) ?[]const u8 {
-        const literal_ptr = c.cmark_node_get_literal(node.cmark) orelse return null;
-        return std.mem.span(literal_ptr);
+    pub fn literal(node: Node) ![]const u8 {
+        const maybe_literal_ptr = c.cmark_node_get_literal(node.cmark);
+        return if (maybe_literal_ptr) |literal_ptr| {
+            std.mem.span(literal_ptr);
+        } else error.NonLiteralNode;
     }
 
     pub fn getType(node: Node) !Type {
