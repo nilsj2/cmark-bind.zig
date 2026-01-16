@@ -155,28 +155,28 @@ pub const Node = struct {
     };
     pub fn renderCommonmark(
         node: Node,
-        allocator: Allocator,
+        allocator: *c.struct_cmark_mem,
         opts: CombinedOpts,
     ) ?[]const u8 {
         const commonmark = c.cmark_render_commonmark_with_mem(
             node.cmark,
             opts.render.toCInt(),
             opts.width.toCInt(),
-            convertAllocator(allocator),
+            allocator,
         ) orelse return null;
         return std.mem.span(commonmark);
     }
 
     pub fn renderHTML(
         node: Node,
-        allocator: Allocator,
+        allocator: *c.struct_cmark_mem,
         options: CombinedOpts,
     ) ?[]const u8 {
         const html = c.cmark_render_html_with_mem(
             node.cmark,
             options.render.toCInt(),
             options.width.toCInt(),
-            convertAllocator(allocator),
+            allocator,
         ) orelse return null;
         return std.mem.span(html);
     }
@@ -226,11 +226,11 @@ pub const Parser = struct {
                 @as(c_int, @intCast(@intFromBool(options.full_info_string))) << 16;
         }
     };
-    pub fn init(allocator: Allocator, options: Options) Parser {
+    pub fn init(allocator: *c.struct_cmark_mem, options: Options) Parser {
         return .{
             .cmark_parser = c.cmark_parser_new_with_mem(
                 options.toCInt(),
-                convertAllocator(allocator),
+                allocator,
             ).?,
         };
     }
@@ -303,7 +303,7 @@ pub const Iterator = struct {
     }
 };
 
-pub fn getArenaAllocator() *c.struct_cmark_mem {
+pub fn arenaAllocator() *c.struct_cmark_mem {
     const arena = c.cmark_get_arena_mem_allocator();
     return arena;
 }
@@ -328,10 +328,17 @@ test "parse from reader" {
         \\- poop
         \\- noob
     );
-    const parser: Parser = .init(testing.allocator, .{});
-    const root_node = try parser.parse(&input);
 
-    const rendered = root_node.renderHTML(testing.allocator, .{}).?;
+    const cmark_allocator = arenaAllocator();
+    defer deinitArenaAllocator(cmark_allocator);
+
+    const parser: Parser = .init(cmark_allocator, .{});
+    defer parser.deinit();
+
+    const root_node = try parser.parse(&input);
+    defer root_node.free();
+
+    const rendered = root_node.renderHTML(cmark_allocator, .{}).?;
     try testing.expectEqualStrings(
         \\<h1>Hello World!</h1>
         \\<p>First test <strong>I</strong> <em>write</em>:</p>
@@ -345,12 +352,14 @@ test "parse from reader" {
 
     var types: std.ArrayList(Node.Type) = .empty;
     defer types.deinit(testing.allocator);
+
     const iter: Iterator = .init(root_node);
     defer iter.deinit();
+
     while (iter.next()) |ev| {
         if (ev == .exit) continue;
         const node = iter.node();
-        try types.append(testing.allocator, node.getType().?);
+        try types.append(testing.allocator, try node.getType());
     }
     const expected = &.{
         .document,
@@ -383,8 +392,15 @@ test "softbreak" {
         \\What would this line break be considered?
         \\A soft line break :-)
     );
-    const parser: Parser = .init(testing.allocator, .{});
+
+    const cmark_allocator = arenaAllocator();
+    defer deinitArenaAllocator(cmark_allocator);
+
+    const parser: Parser = .init(cmark_allocator, .{});
+    defer parser.deinit();
+
     const root = try parser.parse(&input);
+    defer root.free();
 
     var types: std.ArrayList(Node.Type) = .empty;
     defer types.deinit(testing.allocator);
@@ -393,7 +409,7 @@ test "softbreak" {
     while (iter.next()) |ev| {
         if (ev == .exit) continue;
         const node = iter.node();
-        try types.append(testing.allocator, node.getType().?);
+        try types.append(testing.allocator, try node.getType());
     }
     const expected = &.{ .document, .paragraph, .text, .softbreak, .text };
     try testing.expectEqualSlices(Node.Type, expected, types.items);
