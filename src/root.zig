@@ -303,11 +303,14 @@ pub const Iterator = struct {
     }
 };
 
-fn convertAllocator(child_allocator: Allocator) *c.struct_cmark_mem {
-    // TODO Conversion api
-    _ = child_allocator;
+pub fn getArenaAllocator() *c.struct_cmark_mem {
     const arena = c.cmark_get_arena_mem_allocator();
     return arena;
+}
+
+pub fn deinitArenaAllocator(allocator: *c.struct_cmark_mem) void {
+    _ = allocator;
+    c.cmark_arena_reset();
 }
 
 test "correct version" {
