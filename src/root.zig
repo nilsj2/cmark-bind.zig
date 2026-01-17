@@ -121,7 +121,8 @@ pub const Node = struct {
         defer c.cmark_node_free(node.cmark);
     }
 
-    pub fn literal(node: Node) ![]const u8 {
+    pub const LiteralError = error{NonLiteralNode};
+    pub fn literal(node: Node) LiteralError![]const u8 {
         const maybe_literal_ptr = c.cmark_node_get_literal(node.cmark);
         if (maybe_literal_ptr) |literal_ptr| {
             return std.mem.span(literal_ptr);
@@ -133,7 +134,8 @@ pub const Node = struct {
         return c.cmark_node_get_start_line(node.cmark);
     }
 
-    pub fn getType(node: Node) !Type {
+    pub const GetTypeError = error{NodeTypeError};
+    pub fn getType(node: Node) GetTypeError!Type {
         const raw_type = c.cmark_node_get_type(node.cmark);
         if (raw_type == 0) return error.NodeTypeError;
         return @enumFromInt(raw_type);
@@ -158,18 +160,20 @@ pub const Node = struct {
         render: RenderOptions = .{},
         width: Width = .unlimited,
     };
+
+    pub const RenderError = error{RenderError};
     pub fn renderCommonmark(
         node: Node,
         allocator: *c.struct_cmark_mem,
         opts: CombinedOpts,
-    ) ![]const u8 {
+    ) RenderError![]const u8 {
         // I'm assuming it's OOM, the man page says nothing about this, nice...
         const commonmark = c.cmark_render_commonmark_with_mem(
             node.cmark,
             opts.render.toCInt(),
             opts.width.toCInt(),
             allocator,
-        ) orelse return error.OutOfMemory;
+        ) orelse return error.RenderError;
         return std.mem.span(commonmark);
     }
 
@@ -177,13 +181,13 @@ pub const Node = struct {
         node: Node,
         allocator: *c.struct_cmark_mem,
         options: CombinedOpts,
-    ) ![]const u8 {
+    ) RenderError![]const u8 {
         const html = c.cmark_render_html_with_mem(
             node.cmark,
             options.render.toCInt(),
             options.width.toCInt(),
             allocator,
-        ) orelse return error.OutOfMemory;
+        ) orelse return error.RenderError;
         return std.mem.span(html);
     }
 };
@@ -341,7 +345,7 @@ test "parse from reader" {
     const root_node = try parser.parse(&input);
     defer root_node.free();
 
-    const rendered = root_node.renderHTML(cmark_allocator, .{}).?;
+    const rendered = try root_node.renderHTML(cmark_allocator, .{});
     try testing.expectEqualStrings(
         \\<h1>Hello World!</h1>
         \\<p>First test <strong>I</strong> <em>write</em>:</p>
