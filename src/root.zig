@@ -190,9 +190,6 @@ pub const Parser = struct {
     cmark_parser: *c.cmark_parser,
 
     pub const Options = struct {
-        /// Legacy option (no effect).
-        normalize: bool = false,
-
         /// Validate UTF-8 in the input before parsing,
         /// replacing illegal sequences with the replacement character U+FFFD.
         validate_utf8: bool = false,
