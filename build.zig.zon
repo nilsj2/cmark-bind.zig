@@ -2,11 +2,11 @@
     .name = .cmark_bind_zig,
     .version = "0.0.0",
     .fingerprint = 0x86c01450e966fe7a,
-    .minimum_zig_version = "0.15.2",
+    .minimum_zig_version = "0.16.0-dev.2223+4f16e80ce",
     .dependencies = .{
-        .@"libcmark-gfm" = .{
-            .url = "git+https://github.com/nilsj2/libcmark-gfm.zig.git#44ece9641934e3cb7190145ef256e0c1a9a77772",
-            .hash = "libcmark_gfm-0.1.0-wVauQA4nAABtWEBIWSR0wUFBB5Y2E6qNlR1EOOzQ363i",
+        .libcmark_gfm = .{
+            .url = "git+https://github.com/nilsj2/libcmark-gfm.zig.git#50fb98470f1a487a0cfa60c95f0db37f6f2d2320",
+            .hash = "libcmark_gfm-0.1.0-wVauQI0nAADCzjcrKFUDn1IVYQnRVeNQfyMcOpcOJ7H3",
         },
     },
     .paths = .{"."},

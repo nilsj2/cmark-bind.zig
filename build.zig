@@ -9,7 +9,7 @@ pub fn build(b: *std.Build) void {
         .target = target,
     });
 
-    const libcmark_gfm = b.dependency("libcmark-gfm", .{
+    const libcmark_gfm = b.dependency("libcmark_gfm", .{
         .target = target,
         .optimize = optimize,
     });
