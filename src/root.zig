@@ -161,13 +161,14 @@ pub const Node = struct {
         node: Node,
         allocator: *c.struct_cmark_mem,
         opts: CombinedOpts,
-    ) ?[]const u8 {
+    ) ![]const u8 {
+        // I'm assuming it's OOM, the man page says nothing about this, nice...
         const commonmark = c.cmark_render_commonmark_with_mem(
             node.cmark,
             opts.render.toCInt(),
             opts.width.toCInt(),
             allocator,
-        ) orelse return null;
+        ) orelse return error.OutOfMemory;
         return std.mem.span(commonmark);
     }
 
@@ -175,13 +176,13 @@ pub const Node = struct {
         node: Node,
         allocator: *c.struct_cmark_mem,
         options: CombinedOpts,
-    ) ?[]const u8 {
+    ) ![]const u8 {
         const html = c.cmark_render_html_with_mem(
             node.cmark,
             options.render.toCInt(),
             options.width.toCInt(),
             allocator,
-        ) orelse return null;
+        ) orelse return error.OutOfMemory;
         return std.mem.span(html);
     }
 };
