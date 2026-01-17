@@ -123,9 +123,10 @@ pub const Node = struct {
 
     pub fn literal(node: Node) ![]const u8 {
         const maybe_literal_ptr = c.cmark_node_get_literal(node.cmark);
-        return if (maybe_literal_ptr) |literal_ptr| {
-            std.mem.span(literal_ptr);
-        } else error.NonLiteralNode;
+        if (maybe_literal_ptr) |literal_ptr| {
+            return std.mem.span(literal_ptr);
+        }
+        return error.NonLiteralNode;
     }
 
     pub fn startLine(node: Node) c_int {
